@@ -1,0 +1,8 @@
+torch
+tiktoken
+safetensors
+matplotlib
+plotly
+hydra-core
+pytest
+numpy
