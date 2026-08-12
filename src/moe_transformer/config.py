@@ -29,7 +29,13 @@ class ModelConfig:
     rope_theta: float = 10000.0
     norm_eps: float = 1e-5
 
+    # MoE-specific (unused by DenseGPT)
+    num_experts: int = 4
+    top_k: int = 2
+    capacity_factor: float = 1.25
+
     def __post_init__(self) -> None:
         assert self.n_embd % self.n_head == 0, "n_embd must be divisible by n_head"
+        assert self.top_k <= self.num_experts, "top_k cannot exceed num_experts"
         if self.ffn_hidden_dim is None:
             self.ffn_hidden_dim = swiglu_hidden_dim(self.n_embd)
