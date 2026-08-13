@@ -64,6 +64,8 @@ class MoEOutput:
     z_loss: torch.Tensor
     num_dropped_tokens: int
     expert_assignment_counts: torch.Tensor  # (num_experts,), pre-capacity hard counts
+    topk_idx: torch.Tensor  # (N, k), each token's selected expert indices
+    topk_weights: torch.Tensor  # (N, k), combine weights for those experts
 
 
 class MoELayer(nn.Module):
@@ -151,4 +153,6 @@ class MoELayer(nn.Module):
             z_loss=z_loss,
             num_dropped_tokens=num_dropped,
             expert_assignment_counts=expert_assignment_counts,
+            topk_idx=topk_idx,
+            topk_weights=topk_weights,
         )

@@ -151,7 +151,10 @@ class MoEGPT(nn.Module):
         return n_params - total_expert_params + active_expert_params
 
     def forward(
-        self, idx: torch.Tensor, targets: torch.Tensor | None = None
+        self,
+        idx: torch.Tensor,
+        targets: torch.Tensor | None = None,
+        return_router_outputs: bool = False,
     ) -> tuple[torch.Tensor, torch.Tensor | None, dict]:
         B, T = idx.shape
         assert T <= self.config.block_size, (
@@ -163,11 +166,14 @@ class MoEGPT(nn.Module):
         lb_loss = x.new_zeros(())
         z_loss = x.new_zeros(())
         num_dropped_tokens = 0
+        router_outputs = [] if return_router_outputs else None
         for block in self.blocks:
             x, moe_out = block(x)
             lb_loss = lb_loss + moe_out.load_balancing_loss
             z_loss = z_loss + moe_out.z_loss
             num_dropped_tokens += moe_out.num_dropped_tokens
+            if return_router_outputs:
+                router_outputs.append(moe_out)
         n_layer = len(self.blocks)
         lb_loss = lb_loss / n_layer
         z_loss = z_loss / n_layer
@@ -191,6 +197,8 @@ class MoEGPT(nn.Module):
             "z_loss": z_loss,
             "num_dropped_tokens": num_dropped_tokens,
         }
+        if return_router_outputs:
+            aux["router_outputs"] = router_outputs
         return logits, loss, aux
 
     @torch.no_grad()

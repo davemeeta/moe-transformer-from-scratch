@@ -2,6 +2,7 @@ defaults:
   - model: default
   - training: default
   - data: default
+  - analysis: default
   - _self_
 
 seed: 1337

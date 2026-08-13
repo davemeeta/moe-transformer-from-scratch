@@ -1,0 +1,7 @@
+# checkpoint: null analyzes a freshly-initialized (untrained) model -- useful
+# for verifying the tooling itself works before a real training run exists.
+checkpoint: null
+sample_text: "First Citizen:\nBefore we proceed any further, hear me speak."
+num_batches: 20
+batch_size: 16
+out_dir: outputs
