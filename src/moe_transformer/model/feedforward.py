@@ -17,11 +17,14 @@ from moe_transformer.init import init_weights
 
 
 class FeedForward(nn.Module):
-    def __init__(self, config: ModelConfig):
+    def __init__(self, config: ModelConfig, hidden_dim: int | None = None):
         super().__init__()
-        self.gate_proj = nn.Linear(config.n_embd, config.ffn_hidden_dim, bias=config.bias)
-        self.up_proj = nn.Linear(config.n_embd, config.ffn_hidden_dim, bias=config.bias)
-        self.down_proj = nn.Linear(config.ffn_hidden_dim, config.n_embd, bias=config.bias)
+        # hidden_dim override lets MoE experts use a smaller width
+        # (config.expert_ffn_hidden_dim) than the dense config.ffn_hidden_dim.
+        hidden_dim = config.ffn_hidden_dim if hidden_dim is None else hidden_dim
+        self.gate_proj = nn.Linear(config.n_embd, hidden_dim, bias=config.bias)
+        self.up_proj = nn.Linear(config.n_embd, hidden_dim, bias=config.bias)
+        self.down_proj = nn.Linear(hidden_dim, config.n_embd, bias=config.bias)
         self.dropout = nn.Dropout(config.dropout)
 
         self.apply(init_weights)

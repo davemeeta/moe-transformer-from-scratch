@@ -32,6 +32,16 @@ compute (tokens beyond capacity are genuinely skipped) but can still be
 slower in wall-clock time on a GPU because a Python-level loop over experts
 doesn't parallelize the way a fused kernel does. That gap is expected and
 is exactly what those libraries exist to close.
+
+Measured on this project's dev machine (Apple Silicon): the dynamic-shape
+ops this dispatch relies on (torch.nonzero, advanced-indexing gather/
+scatter -- shapes that depend on runtime routing decisions, not just
+tensor rank) are dramatically worse on MPS than on CPU, and MPS timing
+was observed to *degrade* step over step (~4s -> ~15s) rather than settle,
+instead of the reverse GPU-faster-than-CPU pattern you'd expect. CPU ran
+the same model at ~2.4s/step, stable. Train MoE models on CPU on this kind
+of setup; MPS is fine for DenseGPT (no dynamic shapes involved) but not for
+this dispatch mechanism.
 """
 
 from __future__ import annotations
@@ -65,7 +75,8 @@ class MoELayer(nn.Module):
 
         self.gate = nn.Linear(config.n_embd, config.num_experts, bias=False)
         self.experts = nn.ModuleList(
-            FeedForward(config) for _ in range(config.num_experts)
+            FeedForward(config, hidden_dim=config.expert_ffn_hidden_dim)
+            for _ in range(config.num_experts)
         )
 
         self.apply(init_weights)
