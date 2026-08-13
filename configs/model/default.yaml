@@ -1,0 +1,22 @@
+# kind selects which model class train.py builds: "dense" or "moe".
+# All fields below map directly onto moe_transformer.config.ModelConfig --
+# MoE-specific fields are simply unused when kind=dense.
+kind: dense
+
+vocab_size: 50257
+n_embd: 256
+n_head: 4
+n_layer: 4
+block_size: 256
+dropout: 0.1
+bias: false
+ffn_hidden_dim: null
+rope_theta: 10000.0
+norm_eps: 1e-5
+
+num_experts: 4
+top_k: 2
+capacity_factor: 1.25
+expert_ffn_hidden_dim: null
+aux_loss_weight: 0.01
+router_z_loss_weight: 0.001

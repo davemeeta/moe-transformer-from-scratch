@@ -1,0 +1,2 @@
+train_bin: data/processed/train.bin
+val_bin: data/processed/val.bin

@@ -1,0 +1,24 @@
+# Sized to run in a few minutes on CPU by default. Override from the CLI
+# for a real run, e.g. training.max_steps=10000, on Kaggle/Colab.
+max_steps: 500
+batch_size: 16
+learning_rate: 3e-4
+min_lr_ratio: 0.1  # cosine decay floor, as a fraction of learning_rate
+weight_decay: 0.1
+warmup_steps: 50
+grad_clip: 1.0
+
+eval_interval: 100
+eval_iters: 20
+log_interval: 10
+checkpoint_interval: 250
+
+# "auto" resolves to cuda > mps > cpu for dense models, but cuda > cpu for
+# MoE models -- MPS was measured to be pathologically slow (and degrading
+# step-over-step) for MoE's dynamic-shape gather/scatter dispatch, see
+# moe_transformer/model/moe.py's module docstring.
+device: auto
+
+out_dir: checkpoints
+run_name: ${model.kind}
+resume_from: null

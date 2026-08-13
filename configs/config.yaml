@@ -1,0 +1,13 @@
+defaults:
+  - model: default
+  - training: default
+  - data: default
+  - _self_
+
+seed: 1337
+
+hydra:
+  job:
+    chdir: false
+  run:
+    dir: checkpoints/hydra_runs/${now:%Y-%m-%d_%H-%M-%S}

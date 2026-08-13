@@ -6,3 +6,6 @@ data/processed/
 *.bin
 .DS_Store
 *.egg-info/
+checkpoints/
+outputs/
+multirun/
