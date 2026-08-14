@@ -12,7 +12,7 @@ from pathlib import Path
 
 import hydra
 import torch
-from omegaconf import DictConfig
+from omegaconf import DictConfig, OmegaConf
 
 from moe_transformer.checkpoint import load_checkpoint
 from moe_transformer.data import Tokenizer, TokenDataset
@@ -160,18 +160,26 @@ def plot_routing_heatmap(routing_table: dict, path: str | Path) -> None:
 
 @hydra.main(version_base=None, config_path="../../configs", config_name="config")
 def main(cfg: DictConfig) -> None:
-    if cfg.model.kind != "moe":
-        raise ValueError("routing_analysis requires model.kind=moe (dense models have no router)")
-
-    model_config = build_model_config(cfg.model)
-    device = resolve_device(cfg.training.device, cfg.model.kind)
+    device = resolve_device(cfg.training.device, "moe")
     print(f"device: {device}")
 
-    model = MoEGPT(model_config).to(device)
     if cfg.analysis.checkpoint:
+        # Reconstruct the model from its own saved config (same pattern as
+        # compare.py), so a checkpoint trained with different hyperparameters
+        # (num_experts, n_layer, ...) doesn't need every field re-specified
+        # on this CLI to load correctly.
+        saved_cfg = OmegaConf.load(Path(cfg.analysis.checkpoint) / "config.yaml")
+        if saved_cfg.model.kind != "moe":
+            raise ValueError("routing_analysis requires a MoE checkpoint (dense models have no router)")
+        model_config = build_model_config(saved_cfg.model)
+        model = MoEGPT(model_config).to(device)
         load_checkpoint(cfg.analysis.checkpoint, model, device=device)
         print(f"loaded checkpoint from {cfg.analysis.checkpoint}")
     else:
+        if cfg.model.kind != "moe":
+            raise ValueError("routing_analysis requires model.kind=moe (dense models have no router)")
+        model_config = build_model_config(cfg.model)
+        model = MoEGPT(model_config).to(device)
         print("no checkpoint given -- analyzing a freshly-initialized (untrained) model")
     model.eval()
 

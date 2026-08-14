@@ -3,6 +3,7 @@ defaults:
   - training: default
   - data: default
   - analysis: default
+  - compare: default
   - _self_
 
 seed: 1337

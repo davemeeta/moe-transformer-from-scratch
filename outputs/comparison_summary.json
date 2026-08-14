@@ -1,0 +1,26 @@
+{
+  "dense": {
+    "total_params": 16275968,
+    "final_train_loss": 4.1879377365112305,
+    "final_val_loss": 4.755112361907959,
+    "inference": {
+      "tokens_per_sec": 14844.753786045894,
+      "ms_per_forward": 68.98059844970703
+    }
+  },
+  "moe": {
+    "total_params": 18639360,
+    "active_params": 16280064,
+    "final_train_loss": 4.3650007247924805,
+    "final_val_loss": 4.759476137161255,
+    "inference": {
+      "tokens_per_sec": 13119.743993509419,
+      "ms_per_forward": 78.05030345916748
+    }
+  },
+  "notes": [
+    "Both models benchmarked on CPU: MPS was measured to be pathologically slow (and degrading step over step) for MoE's dynamic-shape capacity dispatch, so CPU is the only device both can be fairly compared on (see moe_transformer/model/moe.py's module docstring).",
+    "Inference benchmark is single-batch forward-pass throughput with no KV-cache -- this project's generate() recomputes the full sequence each step, so this measures raw forward-pass cost, not an optimized autoregressive decoding path.",
+    "loss values are cross-entropy only (excludes MoE's weighted load-balancing/z-loss terms), so the comparison reflects next-token prediction quality on equal footing."
+  ]
+}

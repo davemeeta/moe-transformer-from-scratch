@@ -91,16 +91,22 @@ def estimate_loss(
     batch_size: int,
     eval_iters: int,
     device: str,
-) -> float:
+) -> dict:
+    """Returns averaged metrics over eval_iters random batches -- same keys
+    forward_step logs for training (e.g. "loss", and for MoE also "ce_loss",
+    "lb_loss", "z_loss", "dropped_tokens"), so train/val records in
+    metrics.jsonl stay directly comparable rather than val silently
+    collapsing MoE's breakdown into just the aux-loss-inclusive total."""
     was_training = model.training
     model.eval()
-    losses = []
+    totals: dict = {}
     for _ in range(eval_iters):
         x, y = get_batch(dataset, batch_size, device)
-        loss, _ = forward_step(model, kind, x, y)
-        losses.append(loss.item())
+        _, log = forward_step(model, kind, x, y)
+        for k, v in log.items():
+            totals[k] = totals.get(k, 0.0) + v
     model.train(was_training)
-    return sum(losses) / len(losses)
+    return {k: v / eval_iters for k, v in totals.items()}
 
 
 @hydra.main(version_base=None, config_path="../../configs", config_name="config")
@@ -167,11 +173,11 @@ def main(cfg: DictConfig) -> None:
             metrics_file.flush()
 
         if step % cfg.training.eval_interval == 0 and step > start_step:
-            val_loss = estimate_loss(
+            val_metrics = estimate_loss(
                 model, cfg.model.kind, val_ds, cfg.training.batch_size, cfg.training.eval_iters, device
             )
-            print(f"step {step:5d}  val_loss {val_loss:.4f}")
-            metrics_file.write(json.dumps({"step": step, "split": "val", "loss": val_loss}) + "\n")
+            print(f"step {step:5d}  val_loss {val_metrics['loss']:.4f}")
+            metrics_file.write(json.dumps({"step": step, "split": "val", **val_metrics}) + "\n")
             metrics_file.flush()
 
         if step % cfg.training.checkpoint_interval == 0 and step > start_step:

@@ -1,0 +1,16 @@
+# Paths to a trained checkpoint step-dir for each model (as written by
+# train.py, e.g. checkpoints/dense_compare/step_000300). Each checkpoint's
+# own saved config.yaml is used to reconstruct its exact architecture, so
+# dense/moe don't need to be re-specified here.
+dense_checkpoint: checkpoints/dense_compare/step_000300
+moe_checkpoint: checkpoints/moe_compare/step_000300
+
+out_dir: outputs
+
+# Inference benchmark: always run on CPU for both models, since MPS is
+# pathologically slow for MoE's dynamic-shape dispatch (see moe.py) --
+# CPU is the only device both can be fairly compared on.
+benchmark_batch_size: 8
+benchmark_seq_len: 128
+benchmark_repeats: 20
+benchmark_warmup: 5
