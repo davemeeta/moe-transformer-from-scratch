@@ -177,7 +177,7 @@ At this scale, expert routing tends to show real specialization (different exper
 
 ## Author
 
-Meeta Dave, M.Sc. Web Engineering student at TU Chemnitz
+Meeta Dave, M.Sc. Web Engineering, TU Chemnitz
 
 - LinkedIn: [linkedin.com/in/meetadave](https://linkedin.com/in/meetadave)
 - Email: [davemeeta12@gmail.com](mailto:davemeeta12@gmail.com)
