@@ -4,6 +4,7 @@ defaults:
   - data: default
   - analysis: default
   - compare: default
+  - xai: default
   - _self_
 
 seed: 1337

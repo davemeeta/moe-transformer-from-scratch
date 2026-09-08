@@ -6,3 +6,8 @@ plotly
 hydra-core
 pytest
 numpy
+shap
+lime
+scipy
+requests
+gradio

@@ -1,0 +1,18 @@
+# checkpoint: null explains a freshly-initialized (untrained) model -- useful
+# for verifying the Explainer Agent itself works before a real checkpoint
+# exists, same convention as configs/analysis/default.yaml.
+checkpoint: null
+sample_text: "First Citizen:\nBefore we proceed any further, hear me speak."
+target_token_id: null
+shap_max_evals: auto
+lime_num_samples: 500
+comprehensiveness_k: 0.2
+redteam_protected_k: 0.2
+redteam_top_n_neighbors: 8
+redteam_max_edits: 6
+redteam_flip_threshold: 0.5
+redteam_deep_max_edits: 12
+redteam_deep_top_n_neighbors: 16
+judge_model: llama3.2:3b
+batch_num_prompts: 5
+out_dir: outputs/xai

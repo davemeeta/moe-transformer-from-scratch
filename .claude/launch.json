@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "routelens-dashboard",
+      "runtimeExecutable": ".venv/bin/python",
+      "runtimeArgs": ["src/moe_transformer/xai/dashboard.py"],
+      "port": 7860
+    }
+  ]
+}
