@@ -1,0 +1,49 @@
+{
+  "prompts": [
+    "Before we proceed any further, hear me speak.",
+    "You are all resolved rather to die than to famish?",
+    "First, you know Caius Marcius is chief enemy to the people.",
+    "We know't, we know't.",
+    "Let us kill him, and we'll have corn at our own price."
+  ],
+  "aggregate": {
+    "attention": {
+      "mean_deletion_auc": 0.18655046321141225,
+      "mean_insertion_auc": 0.7228138769074576,
+      "mean_comprehensiveness": 0.8652466252446175,
+      "mean_sufficiency": 0.2245811939239502,
+      "mean_edit_fraction": 0.9846153846153847,
+      "flip_rate": 0.0,
+      "mean_plausibility": 3.2,
+      "divergence_rate": 0.4
+    },
+    "shap": {
+      "mean_deletion_auc": 0.22521792238053923,
+      "mean_insertion_auc": 0.07317754566520926,
+      "mean_comprehensiveness": -0.2661575831472874,
+      "mean_sufficiency": -0.0048975348472595215,
+      "mean_edit_fraction": 0.11689976689976692,
+      "flip_rate": 1.0,
+      "mean_plausibility": 2.8,
+      "divergence_rate": 0.2
+    },
+    "lime": {
+      "mean_deletion_auc": 0.1376464288951102,
+      "mean_insertion_auc": 0.1387261631516121,
+      "mean_comprehensiveness": 0.8881802375428378,
+      "mean_sufficiency": 0.8794465951621533,
+      "mean_edit_fraction": 0.12865800865800864,
+      "flip_rate": 1.0,
+      "mean_plausibility": 4.4,
+      "divergence_rate": 0.8
+    }
+  },
+  "collapse": {
+    "scores": [
+      0.042,
+      0.009,
+      0.008,
+      0.015
+    ]
+  }
+}

@@ -1,0 +1,335 @@
+{
+  "text": "First Citizen:\nBefore we proceed any further, hear me speak.",
+  "tokens": [
+    "First",
+    " Citizen",
+    ":",
+    "\n",
+    "Before",
+    " we",
+    " proceed",
+    " any",
+    " further",
+    ",",
+    " hear",
+    " me",
+    " speak",
+    "."
+  ],
+  "target_token_id": 198,
+  "target_token_str": "\n",
+  "attention_importance": [
+    0.21259011328220367,
+    0.10238688439130783,
+    0.1341264843940735,
+    0.08896713703870773,
+    0.07227671146392822,
+    0.045665591955184937,
+    0.024230532348155975,
+    0.033987246453762054,
+    0.023493990302085876,
+    0.05253850668668747,
+    0.03119008243083954,
+    0.028651652857661247,
+    0.019109854474663734,
+    0.13078522682189941
+  ],
+  "shap_words": [
+    "First ",
+    "Citizen:\n",
+    "Before ",
+    "we ",
+    "proceed ",
+    "any ",
+    "further, ",
+    "hear ",
+    "me ",
+    "speak"
+  ],
+  "shap_values": [
+    0.019804058014415205,
+    0.022957325796596706,
+    0.06785241281613708,
+    0.00943103269673884,
+    0.015185948053840548,
+    0.03108232974773273,
+    0.01702131994534284,
+    -0.02549283124972135,
+    -0.0889970168354921,
+    0.18216264265356585
+  ],
+  "lime_words": [
+    "First",
+    " ",
+    "Citizen",
+    ":\n",
+    "Before",
+    " ",
+    "we",
+    " ",
+    "proceed",
+    " ",
+    "any",
+    " ",
+    "further",
+    ", ",
+    "hear",
+    " ",
+    "me",
+    " ",
+    "speak",
+    "."
+  ],
+  "lime_values": [
+    -0.0038103831015305093,
+    0.0,
+    0.009485005968194115,
+    0.0,
+    0.1056285378700783,
+    0.0,
+    0.016973310557952575,
+    0.0,
+    -0.001270585788595358,
+    0.0,
+    0.005322484981979843,
+    0.0,
+    -0.016869269186917075,
+    0.0,
+    0.006412480092298569,
+    0.0,
+    -0.0019764115407875193,
+    0.0,
+    0.8492905797917217,
+    0.0
+  ],
+  "router_top1_last_layer": [
+    3,
+    1,
+    2,
+    0,
+    2,
+    2,
+    1,
+    2,
+    1,
+    2,
+    1,
+    2,
+    1,
+    2
+  ],
+  "faithfulness": {
+    "attention": {
+      "deletion_auc": 0.24598754024399178,
+      "insertion_auc": 0.6876819193130358,
+      "comprehensiveness": 0.8297977522015572,
+      "sufficiency": 0.19208574295043945,
+      "original_prob": 0.9367839694023132,
+      "router_attribution_agreement": 0.2087912087912088
+    },
+    "shap": {
+      "deletion_auc": 0.17727784560993312,
+      "insertion_auc": 0.06418375903740525,
+      "comprehensiveness": -0.48514856584370136,
+      "sufficiency": 0.02141286712139845,
+      "original_prob": 0.03053162805736065
+    },
+    "lime": {
+      "deletion_auc": 0.08367559403413906,
+      "insertion_auc": 0.06117363148368897,
+      "comprehensiveness": 0.9307746738195419,
+      "sufficiency": 0.9251773292198777,
+      "original_prob": 0.9367839694023132
+    }
+  },
+  "redteam": {
+    "attention": {
+      "protected_positions": [
+        0,
+        2,
+        13
+      ],
+      "editable_positions": [
+        1,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12
+      ],
+      "original_prob": 0.9367839694023132,
+      "final_prob": 0.7331401705741882,
+      "flipped": false,
+      "num_edits": 11,
+      "edit_fraction": 1.0,
+      "substitutions": [
+        {
+          "position": 8,
+          "original_token": " further",
+          "replacement_token": " with"
+        },
+        {
+          "position": 9,
+          "original_token": ",",
+          "replacement_token": "."
+        },
+        {
+          "position": 12,
+          "original_token": " speak",
+          "replacement_token": " have"
+        },
+        {
+          "position": 5,
+          "original_token": " we",
+          "replacement_token": " '"
+        },
+        {
+          "position": 4,
+          "original_token": "Before",
+          "replacement_token": "Wh"
+        },
+        {
+          "position": 7,
+          "original_token": " any",
+          "replacement_token": " an"
+        },
+        {
+          "position": 10,
+          "original_token": " hear",
+          "replacement_token": " make"
+        },
+        {
+          "position": 6,
+          "original_token": " proceed",
+          "replacement_token": " recoil"
+        },
+        {
+          "position": 1,
+          "original_token": " Citizen",
+          "replacement_token": " Serving"
+        },
+        {
+          "position": 11,
+          "original_token": " me",
+          "replacement_token": " the"
+        },
+        {
+          "position": 3,
+          "original_token": "\n",
+          "replacement_token": " '"
+        }
+      ]
+    },
+    "shap": {
+      "protected_positions": [
+        11,
+        12
+      ],
+      "editable_positions": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        13
+      ],
+      "original_prob": 0.9367839694023132,
+      "final_prob": 0.007376207038760185,
+      "flipped": true,
+      "num_edits": 1,
+      "edit_fraction": 0.08333333333333333,
+      "substitutions": [
+        {
+          "position": 13,
+          "original_token": ".",
+          "replacement_token": "\n"
+        }
+      ]
+    },
+    "lime": {
+      "protected_positions": [
+        4,
+        5,
+        8,
+        12
+      ],
+      "editable_positions": [
+        0,
+        1,
+        2,
+        3,
+        6,
+        7,
+        9,
+        10,
+        11,
+        13
+      ],
+      "original_prob": 0.9367839694023132,
+      "final_prob": 0.007376207038760185,
+      "flipped": true,
+      "num_edits": 1,
+      "edit_fraction": 0.1,
+      "substitutions": [
+        {
+          "position": 13,
+          "original_token": ".",
+          "replacement_token": "\n"
+        }
+      ]
+    }
+  },
+  "redteam_deep_retry": [
+    "attention"
+  ],
+  "judge": {
+    "plausibility": {
+      "attention": {
+        "score": 5,
+        "reasoning": "The explanation sounds obviously correct because the presence of a colon (:) after 'First Citizen' suggests that the next token '\n' is likely a line break, which is a common convention in text formatting."
+      },
+      "shap": {
+        "score": 4,
+        "reasoning": "The explanation makes sense because the signed importance values indicate that 'speak' is the most probable continuation, while the negative values for 'me ' and 'hear ' suggest that the model is correcting for the fact that they are incomplete or incorrectly formatted tokens, making the prediction of '\n' plausible as a way to correct the error."
+      },
+      "lime": {
+        "score": 4,
+        "reasoning": "The high importance of 'speak' suggests that the model is emphasizing the speaker's words, and the surrounding context supports this interpretation, making the explanation plausible to a human reader."
+      }
+    },
+    "verdicts": {
+      "attention": {
+        "plausibility_score": 5,
+        "plausibility_reasoning": "The explanation sounds obviously correct because the presence of a colon (:) after 'First Citizen' suggests that the next token '\n' is likely a line break, which is a common convention in text formatting.",
+        "faithfulness_confidence": "faithful",
+        "divergent": false,
+        "needs_deeper_redteam": true
+      },
+      "shap": {
+        "plausibility_score": 4,
+        "plausibility_reasoning": "The explanation makes sense because the signed importance values indicate that 'speak' is the most probable continuation, while the negative values for 'me ' and 'hear ' suggest that the model is correcting for the fact that they are incomplete or incorrectly formatted tokens, making the prediction of '\n' plausible as a way to correct the error.",
+        "faithfulness_confidence": "unfaithful",
+        "divergent": true,
+        "needs_deeper_redteam": false
+      },
+      "lime": {
+        "plausibility_score": 4,
+        "plausibility_reasoning": "The high importance of 'speak' suggests that the model is emphasizing the speaker's words, and the surrounding context supports this interpretation, making the explanation plausible to a human reader.",
+        "faithfulness_confidence": "unfaithful",
+        "divergent": true,
+        "needs_deeper_redteam": false
+      }
+    }
+  }
+}
