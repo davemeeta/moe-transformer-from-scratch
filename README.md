@@ -175,6 +175,53 @@ python -m moe_transformer.compare model.n_embd=384 model.n_layer=6 model.num_exp
 
 At this scale, expert routing tends to show real specialization (different experts activating for punctuation, dialogue, or rare tokens, for instance) rather than the near-uniform routing a small, briefly-trained model produces.
 
+## RouteLens: a multi-agent explainability auditor
+
+A second project layered on top of this one (`src/moe_transformer/xai/`), built to actually learn explainable ML (SHAP, LIME, attention visualization) and multi-agent system design rather than read about them. Most XAI demos stop at producing a heatmap. RouteLens's throughline is checking whether the heatmap is *true*, and tying that check to the one thing that makes this model different from any other transformer: the routing decision itself.
+
+For any next-token prediction, six agents run as a hand-rolled state machine (no LangGraph/AutoGen -- the point of a multi-agent learning project is writing the control flow yourself):
+
+```
+Explainer -> Faithfulness -> Red-Team -> Judge -> Report
+                                  ^          |
+                                  '-- retry -'   (if a red-team result was inconclusive)
+```
+
+- **Explainer** -- SHAP, LIME, attention rollout, and (for the MoE model) the router's own per-token expert trace, on one next-token prediction.
+- **Faithfulness** -- deletion/insertion AUC, comprehensiveness/sufficiency (ERASER-style), and **Router-Attribution Agreement**: this project's own metric, Kendall's tau between attention's per-token importance and the router's per-token gate-weight commitment.
+- **Red-Team** -- a *necessity attack*: freezes each explainer's top-20% "important" tokens, then greedily substitutes the rest with the model's own embedding-nearest-neighbor tokens, searching for the fewest edits that flip the prediction anyway. Fewer edits needed means the explainer missed where the model's real sensitivity lives.
+- **Judge** -- an independent local LLM (Ollama, `llama3.2:3b`) rates how *plausible* each explanation sounds, blind to the faithfulness numbers, then flags cases where a convincing-sounding explanation is actually unfaithful.
+- **Report** -- one markdown report per prediction, or aggregated across a batch of prompts.
+
+Zero paid APIs anywhere in the pipeline -- SHAP, LIME, the embedding-based attack, and the Judge's LLM all run local and offline.
+
+### Usage
+
+```bash
+# explain one prediction end to end (attribution -> faithfulness -> red-team -> judge -> report)
+python -m moe_transformer.xai.run_explainer xai.checkpoint=checkpoints/moe_compare_v2/step_000600
+# aggregate the same pipeline across several real prompts
+python -m moe_transformer.xai.run_batch_eval xai.checkpoint=checkpoints/moe_compare_v2/step_000600
+# interactive dashboard: type a prompt, see every method side by side, live
+python -m moe_transformer.xai.dashboard
+```
+
+Writes attribution charts, `explanation_summary.json`, and `report.md` to `outputs/xai/`.
+
+### Result
+
+Batch-eval across 5 real prompts, same checkpoint:
+
+| explainer | mean del_auc | mean comp | mean edit_frac | flip rate | mean plausibility | divergence rate |
+|---|---|---|---|---|---|---|
+| attention | 0.187 | **0.865** | 0.985 | **0.00** | 3.2 | 0.4 |
+| shap | 0.225 | −0.266 | 0.117 | 1.00 | 2.8 | 0.2 |
+| lime | 0.138 | 0.888 | 0.129 | 1.00 | **4.4** | **0.8** |
+
+The headline finding: **LIME never once survives the red-team attack, yet scores the highest mean plausibility to the judge and is flagged divergent 80% of the time** -- the explainer that looks most convincing is the least trustworthy. Attention never flips at all.
+
+Three real bugs surfaced along the way, not injected for demonstration: LIME's `as_list()` only returns a re-ranked subset of words (useless for anything positional, rebuilt via LIME's own `IndexedString`); device resolution ran before a checkpoint's model kind was known, which could have silently routed a MoE model onto MPS (this project's own docs already flag that as pathologically slow); and SHAP's default word masker silently drops trailing text when a prompt doesn't end in whitespace.
+
 ## Author
 
 Meeta Dave, M.Sc. Web Engineering, TU Chemnitz
