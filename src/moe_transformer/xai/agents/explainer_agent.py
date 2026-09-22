@@ -35,6 +35,7 @@ class ExplainerAgent(Agent):
         block_size: int,
         shap_max_evals: int | str = "auto",
         lime_num_samples: int = 500,
+        lime_seed: int | None = None,
     ):
         self.model = model
         self.tokenizer = tokenizer
@@ -42,6 +43,7 @@ class ExplainerAgent(Agent):
         self.block_size = block_size
         self.shap_max_evals = shap_max_evals
         self.lime_num_samples = lime_num_samples
+        self.lime_seed = lime_seed
 
     def run(self, state: AgentState) -> AgentState:
         text = state["text"]
@@ -79,6 +81,7 @@ class ExplainerAgent(Agent):
             target_token_id,
             self.block_size,
             self.lime_num_samples,
+            self.lime_seed,
         )
 
         state.update(

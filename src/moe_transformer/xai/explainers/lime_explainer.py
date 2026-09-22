@@ -37,6 +37,7 @@ def explain_lime(
     target_token_id: int,
     block_size: int,
     num_samples: int = 500,
+    seed: int | None = None,
 ) -> tuple[list[str], list[float]]:
     """Returns (tokens, lime_weights) -- tokens is LIME's full positional
     segmentation of `text` (words and separators, in original order),
@@ -49,7 +50,7 @@ def explain_lime(
         return np.stack([1.0 - p, p], axis=1)
 
     num_features = max(1, len(IndexedString(text).inverse_vocab))
-    explainer = LimeTextExplainer(class_names=["not_target", "target"])
+    explainer = LimeTextExplainer(class_names=["not_target", "target"], random_state=seed)
     explanation = explainer.explain_instance(
         text,
         predict_proba,

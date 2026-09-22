@@ -14,5 +14,5 @@ redteam_flip_threshold: 0.5
 redteam_deep_max_edits: 12
 redteam_deep_top_n_neighbors: 16
 judge_model: llama3.2:3b
-batch_num_prompts: 5
+batch_num_prompts: 50
 out_dir: outputs/xai

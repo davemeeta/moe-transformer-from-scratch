@@ -43,6 +43,7 @@ class Orchestrator:
         deep_top_n_neighbors: int = 16,
         judge_model: str = "llama3.2:3b",
         judge_plausibility_fn: PlausibilityFn | None = None,
+        seed: int | None = None,
     ):
         self.model = model
         self.tokenizer = tokenizer
@@ -55,6 +56,7 @@ class Orchestrator:
         self.explainer = ExplainerAgent(
             model, tokenizer, device, block_size,
             shap_max_evals=shap_max_evals, lime_num_samples=lime_num_samples,
+            lime_seed=seed,
         )
         self.faithfulness = FaithfulnessAgent(
             model, tokenizer, device, block_size, comprehensiveness_k=comprehensiveness_k
@@ -66,7 +68,9 @@ class Orchestrator:
             max_edits=redteam_max_edits,
             flip_threshold=redteam_flip_threshold,
         )
-        self.judge = JudgeAgent(model=judge_model, plausibility_fn=judge_plausibility_fn)
+        self.judge = JudgeAgent(
+            model=judge_model, plausibility_fn=judge_plausibility_fn, seed=seed
+        )
         self.report = ReportAgent()
 
     def run(self, text: str, target_token_id: int | None = None) -> AgentState:

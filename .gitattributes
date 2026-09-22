@@ -1,0 +1,3 @@
+# The routing heatmap is a generated plotly export (~3 MB of inlined JS), not
+# source code -- without this GitHub reports the repo as ~96% HTML.
+*.html linguist-generated=true
