@@ -139,6 +139,30 @@ def test_judge_reuses_cached_plausibility_without_recalling_fn():
     assert len(calls) == 3
 
 
+def test_rate_plausibility_gives_actionable_message_when_ollama_unreachable(monkeypatch):
+    # Still hermetic -- no real Ollama call happens, query_ollama is
+    # monkeypatched to fail the way it actually does when `ollama serve`
+    # isn't running, so this checks the fallback message/flag without
+    # needing Ollama installed.
+    import requests
+
+    from moe_transformer.xai.agents import judge_agent as judge_agent_module
+
+    def raise_connection_error(model, prompt, seed=None):
+        raise requests.exceptions.ConnectionError("Connection refused")
+
+    monkeypatch.setattr(judge_agent_module, "query_ollama", raise_connection_error)
+
+    judge = JudgeAgent(model="llama3.2:3b")
+    with pytest.warns(UserWarning, match="ollama serve"):
+        result = judge._rate_plausibility("Hello world", "!", ["Hello", " world"], [0.9, 0.1])
+
+    assert result["score"] == 3
+    assert result["failed"] is True
+    assert "ollama serve" in result["reasoning"]
+    assert "ollama pull llama3.2:3b" in result["reasoning"]
+
+
 def test_orchestrator_end_to_end_on_tiny_moe_model():
     config = make_config()
     model = MoEGPT(config)

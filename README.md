@@ -9,6 +9,7 @@ A GPT-style transformer with a hand-built Mixture-of-Experts layer: gating netwo
 - Capacity-limited dispatch drops tokens under load, the same tradeoff Switch Transformer and GShard make in production, rather than treating compute as unbounded.
 - Dense and MoE models are parameter-matched so the comparison between them means something.
 - Runs on a CPU or a free-tier GPU (Kaggle, Colab). No cluster required.
+- Includes **RouteLens**, a multi-agent auditor that tests whether SHAP/LIME/attention explanations of this model are faithful -- with seeded 50-prompt evaluations, confidence intervals, and the results that *didn't* hold up reported alongside the ones that did (see [below](#routelens-a-multi-agent-explainability-auditor)).
 
 ## Why this exists
 
@@ -93,6 +94,15 @@ python3 -m venv .venv
 ```
 
 Requires Python 3.11+. Works on CPU; a GPU speeds up training but isn't required for the default config.
+
+**Additional setup for RouteLens only** (the core transformer/MoE project above needs none of this): the Judge agent rates explanations with a local LLM via [Ollama](https://ollama.com), not a paid API. Install it, then:
+
+```bash
+ollama serve &
+ollama pull llama3.2:3b
+```
+
+`ollama serve` must be running whenever you use `run_explainer.py`, `run_batch_eval.py`, or `dashboard.py`. If it isn't, the Judge agent doesn't crash -- it logs a warning, defaults each affected rating to a neutral score flagged `failed: true`, and batch-eval statistics exclude those failed ratings rather than silently averaging them in. Also note this means RouteLens can't run on Kaggle/Colab notebooks (no local Ollama server there), even though the core dense/MoE training does.
 
 ## Usage
 
@@ -190,35 +200,56 @@ Explainer -> Faithfulness -> Red-Team -> Judge -> Report
 - **Explainer** -- SHAP, LIME, attention rollout, and (for the MoE model) the router's own per-token expert trace, on one next-token prediction.
 - **Faithfulness** -- deletion/insertion AUC, comprehensiveness/sufficiency (ERASER-style), and **Router-Attribution Agreement**: this project's own metric, Kendall's tau between attention's per-token importance and the router's per-token gate-weight commitment.
 - **Red-Team** -- a *necessity attack*: freezes each explainer's top-20% "important" tokens, then greedily substitutes the rest with the model's own embedding-nearest-neighbor tokens, searching for the fewest edits that flip the prediction anyway. Fewer edits needed means the explainer missed where the model's real sensitivity lives.
-- **Judge** -- an independent local LLM (Ollama, `llama3.2:3b`) rates how *plausible* each explanation sounds, blind to the faithfulness numbers, then flags cases where a convincing-sounding explanation is actually unfaithful.
+- **Judge** -- an independent local LLM (Ollama, `llama3.2:3b`) rates how *plausible* each explanation sounds, blind to the faithfulness numbers, then flags cases where a convincing-sounding explanation is actually unfaithful (in practice a 3B model rates nearly everything ~4/5 -- see the results below).
 - **Report** -- one markdown report per prediction, or aggregated across a batch of prompts.
 
 Zero paid APIs anywhere in the pipeline -- SHAP, LIME, the embedding-based attack, and the Judge's LLM all run local and offline.
+
+![RouteLens dashboard: type a prompt, get attribution charts, router trace, faithfulness, red-team and judge tables, and a report](docs/dashboard_demo.gif)
 
 ### Usage
 
 ```bash
 # explain one prediction end to end (attribution -> faithfulness -> red-team -> judge -> report)
 python -m moe_transformer.xai.run_explainer xai.checkpoint=checkpoints/moe_compare_v2/step_000600
-# aggregate the same pipeline across several real prompts
-python -m moe_transformer.xai.run_batch_eval xai.checkpoint=checkpoints/moe_compare_v2/step_000600
+# aggregate the same pipeline across 50 seeded prompts, with bootstrap confidence intervals
+python -m moe_transformer.xai.run_batch_eval xai.checkpoint=checkpoints/moe_compare_v2/step_000600 xai.out_dir=outputs/xai/batch_moe_step600
 # interactive dashboard: type a prompt, see every method side by side, live
 python -m moe_transformer.xai.dashboard
 ```
 
 Writes attribution charts, `explanation_summary.json`, and `report.md` to `outputs/xai/`.
 
-### Result
+### Results
 
-Batch-eval across 5 real prompts, same checkpoint:
+Batch evaluation over **50 prompts** sampled (seed 1337) from TinyShakespeare, on three checkpoints: the main MoE model (step 600), an earlier MoE checkpoint (step 300), and the dense baseline (step 600). Everything stochastic is seeded (prompt sampling, LIME, the judge at temperature 0) and every number is a mean with a 95% bootstrap CI over prompts. Full tables and per-prompt records are in `outputs/xai/batch_*/`.
 
-| explainer | mean del_auc | mean comp | mean edit_frac | flip rate | mean plausibility | divergence rate |
-|---|---|---|---|---|---|---|
-| attention | 0.187 | **0.865** | 0.985 | **0.00** | 3.2 | 0.4 |
-| shap | 0.225 | −0.266 | 0.117 | 1.00 | 2.8 | 0.2 |
-| lime | 0.138 | 0.888 | 0.129 | 1.00 | **4.4** | **0.8** |
+**Red-team necessity attack** -- flip rate, and the fraction of editable ("unimportant") tokens needed to flip the prediction (lower = the explainer missed more of what the model relies on):
 
-The headline finding: **LIME never once survives the red-team attack, yet scores the highest mean plausibility to the judge and is flagged divergent 80% of the time** -- the explainer that looks most convincing is the least trustworthy. Attention never flips at all.
+| checkpoint | explainer | flip rate | edit fraction to flip |
+|---|---|---|---|
+| MoE, step 600 | attention | 0.86 [0.76, 0.94] | **0.33** [0.25, 0.42] |
+| | shap | 1.00 [1.00, 1.00] | 0.16 [0.14, 0.18] |
+| | lime | 0.98 [0.94, 1.00] | 0.18 [0.15, 0.22] |
+| MoE, step 300 | attention | 0.70 [0.56, 0.82] | **0.46** [0.35, 0.56] |
+| | shap | 1.00 [1.00, 1.00] | 0.17 [0.14, 0.21] |
+| | lime | 0.98 [0.94, 1.00] | 0.20 [0.16, 0.25] |
+| Dense, step 600 | attention | 0.82 [0.70, 0.92] | **0.34** [0.25, 0.44] |
+| | shap | 1.00 [1.00, 1.00] | 0.15 [0.13, 0.18] |
+| | lime | 0.98 [0.94, 1.00] | 0.19 [0.15, 0.24] |
+
+**What held up, and replicated on all three models:**
+
+- Every explainer can be broken: editing only the tokens it called unimportant flips the prediction on 100% of prompts for SHAP, 98% for LIME, and 70-86% for attention.
+- Attention is the hardest to break, needing roughly twice as many edits as SHAP or LIME (confidence intervals don't overlap). "Hardest to break" is a relative claim -- it still breaks most of the time.
+- SHAP's comprehensiveness is *negative* on both MoE checkpoints (-0.105 [-0.177, -0.033] and -0.138 [-0.192, -0.086]): removing the tokens SHAP ranks as most important makes the model, on average, *more* likely to predict the target. It is small and positive on the dense model (0.051), so this may be specific to how SHAP's word-level masking interacts with routed models -- I haven't isolated why.
+
+**What did not hold up:** an earlier 5-prompt run suggested "attention never flips" and "LIME sounds the most convincing but is the least faithful". Both were small-sample artifacts, and I've retracted them. Two more honest negatives from the 50-prompt runs:
+
+- **Router-Attribution Agreement is ~0.** Kendall's tau between attention rollout and the router's gate weights is -0.025 [-0.101, 0.048] on the main MoE checkpoint and weakly negative (-0.119 [-0.195, -0.048]) at step 300. I built this metric expecting attention to track routing; on this model it doesn't (an earlier single-prompt value of +0.209 did not generalize).
+- **The judge can't tell explainers apart.** A local 3B model rates all three about 3.9-4.0 out of 5, so the "plausible but unfaithful" divergence rate (0.48-0.92) mostly restates the red-team flip rate rather than adding an independent signal. A stronger judge, or human ratings on a subset, would be needed to test the plausibility-vs-faithfulness question properly.
+
+**Limits:** models this small (600 CPU training steps on TinyShakespeare) may not transfer to real LLMs; prompts come from one corpus; one seed; the attack is greedy, so "edits needed" is an upper bound; and "flipped" means the target token's probability dropped by at least 50% (`redteam_flip_threshold`).
 
 Three real bugs surfaced along the way, not injected for demonstration: LIME's `as_list()` only returns a re-ranked subset of words (useless for anything positional, rebuilt via LIME's own `IndexedString`); device resolution ran before a checkpoint's model kind was known, which could have silently routed a MoE model onto MPS (this project's own docs already flag that as pathologically slow); and SHAP's default word masker silently drops trailing text when a prompt doesn't end in whitespace.
 

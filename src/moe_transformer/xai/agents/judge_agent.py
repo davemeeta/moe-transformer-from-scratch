@@ -15,6 +15,7 @@ model pulled (e.g. `ollama pull llama3.2:3b`) is the only setup required.
 from __future__ import annotations
 
 import json
+import warnings
 from typing import Callable
 
 import requests
@@ -31,12 +32,11 @@ def _top_k_display(words: list[str], values: list[float], k: int = 5) -> str:
     return ", ".join(f"{words[i]!r} ({values[i]:+.3f})" for i in order)
 
 
-def query_ollama(model: str, prompt: str, timeout: float = 60.0) -> str:
-    response = requests.post(
-        OLLAMA_URL,
-        json={"model": model, "prompt": prompt, "stream": False, "format": "json"},
-        timeout=timeout,
-    )
+def query_ollama(model: str, prompt: str, timeout: float = 60.0, seed: int | None = None) -> str:
+    payload: dict = {"model": model, "prompt": prompt, "stream": False, "format": "json"}
+    if seed is not None:
+        payload["options"] = {"temperature": 0, "seed": seed}
+    response = requests.post(OLLAMA_URL, json=payload, timeout=timeout)
     response.raise_for_status()
     return response.json()["response"]
 
@@ -49,9 +49,11 @@ class JudgeAgent(Agent):
         model: str = "llama3.2:3b",
         flip_edit_fraction_threshold: float = 0.2,
         plausibility_fn: PlausibilityFn | None = None,
+        seed: int | None = None,
     ):
         self.model = model
         self.flip_edit_fraction_threshold = flip_edit_fraction_threshold
+        self.seed = seed
         # Injectable for tests (avoids a real Ollama call); defaults to the
         # real local-LLM read for actual runs.
         self._plausibility_fn = plausibility_fn or self._rate_plausibility
@@ -77,13 +79,16 @@ class JudgeAgent(Agent):
             redteam_result = state["redteam"][name]
             faithfulness_confidence = self._faithfulness_confidence(redteam_result)
             score = plausibility[name]["score"]
-            divergent = (score >= 4 and faithfulness_confidence == "unfaithful") or (
-                score <= 2 and faithfulness_confidence == "faithful"
+            judge_failed = plausibility[name].get("failed", False)
+            divergent = not judge_failed and (
+                (score >= 4 and faithfulness_confidence == "unfaithful")
+                or (score <= 2 and faithfulness_confidence == "faithful")
             )
 
             verdicts[name] = {
                 "plausibility_score": score,
                 "plausibility_reasoning": plausibility[name]["reasoning"],
+                "judge_failed": judge_failed,
                 "faithfulness_confidence": faithfulness_confidence,
                 "divergent": divergent,
                 "needs_deeper_redteam": not redteam_result.flipped,
@@ -121,11 +126,31 @@ class JudgeAgent(Agent):
             'form {"score": <int 1-5>, "reasoning": "<one sentence>"}'
         )
         try:
-            raw = query_ollama(self.model, prompt)
+            raw = query_ollama(self.model, prompt, seed=self.seed)
             parsed = json.loads(raw)
-            return {"score": int(parsed["score"]), "reasoning": str(parsed["reasoning"])}
+            score = min(5, max(1, int(parsed["score"])))
+            return {"score": score, "reasoning": str(parsed["reasoning"])}
+        except requests.exceptions.ConnectionError:
+            # By far the most common failure, and the one a first-time
+            # RouteLens run is most likely to hit: Ollama isn't running at
+            # all. Worth its own branch with concrete remediation rather
+            # than a generic exception message -- this is a setup problem,
+            # not a judge-quality problem.
+            reasoning = (
+                f"judge unavailable: could not reach Ollama at {OLLAMA_URL}. "
+                f"Start it with `ollama serve`, make sure the model is pulled "
+                f"(`ollama pull {self.model}`), then re-run. "
+                "Defaulted to a neutral (3/5) score."
+            )
+            warnings.warn(reasoning)
+            return {"score": 3, "reasoning": reasoning, "failed": True}
         except Exception as e:
+            # A neutral default keeps the pipeline running, but it must never
+            # pass silently: batch stats exclude `failed` ratings so a flaky
+            # Ollama server can't quietly drag every mean toward 3.
+            warnings.warn(f"judge unavailable ({type(e).__name__}: {e}) -- defaulted to neutral")
             return {
                 "score": 3,
                 "reasoning": f"judge unavailable ({type(e).__name__}) -- defaulted to neutral",
+                "failed": True,
             }
